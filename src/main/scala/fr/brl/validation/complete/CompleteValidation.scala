@@ -72,9 +72,17 @@ object CompleteValidation extends App {
       }
     }
 
-    contacts.view.zipWithIndex.map {
-      case (c, i) => (validateEmail(c.email, i), validatePhone(c.phone, i)).mapN(Contact)
-    }.toList.sequence
+    /*    contacts.view
+          .zipWithIndex
+          .map {
+            case (c, i) => (validateEmail(c.email, i), validatePhone(c.phone, i)).mapN(Contact)
+          }.toList.sequence*/
+
+
+    contacts.view
+      .zipWithIndex
+      .toList
+      .traverse { case (c, i) => (validateEmail(c.email, i), validatePhone(c.phone, i)).mapN(Contact) }
 
   }
 
