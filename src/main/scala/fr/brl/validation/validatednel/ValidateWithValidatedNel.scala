@@ -36,7 +36,6 @@ object ValidateWithValidatedNel extends App {
     val validName = validateName(d.name)
     val validEmail = validateEmail(d.email)
     val validAge = validateAge(d.age)
-    val x = (validName, validEmail, validAge)
     (validName, validEmail, validAge).mapN(Data)
   }
 

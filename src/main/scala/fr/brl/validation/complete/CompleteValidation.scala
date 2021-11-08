@@ -1,7 +1,8 @@
 package fr.brl.validation.complete
 
+import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
-import cats.implicits._
+import cats.implicits.{catsStdShowForMap, catsStdShowForString, _}
 
 import scala.util.Try
 
@@ -31,7 +32,6 @@ object CompleteValidation extends App {
 
   type AllErrorsOr[T] = ValidatedNel[ValidationError, T]
 
-
   def validateName(name: String): AllErrorsOr[String] = {
     def validateUppercaseName(name: String): AllErrorsOr[String] =
       if (name.headOption.exists(_.isUpper)) name.validNel else ValidationError("person.name", NameMustBeginWithUppercase).invalidNel
@@ -39,9 +39,9 @@ object CompleteValidation extends App {
     def validateNonEmptyName(name: String): AllErrorsOr[String] =
       if (name.nonEmpty) name.validNel else ValidationError("person.name", NameMustNotBeEmpty).invalidNel
 
-    // validateNonEmptyName(name) combine validateUppercaseName(name) //accumulates all errors AND ALL SUCCESS !
     validateNonEmptyName(name) *> validateUppercaseName(name)
     // validateNonEmptyName(name) productR validateUppercaseName(name)
+    // validateNonEmptyName(name) combine validateUppercaseName(name) //accumulates all errors AND ALL SUCCESS !
 
   }
 
@@ -102,15 +102,12 @@ object CompleteValidation extends App {
   val okPhone = "+33 06 77 77 77 77"
   val badPhone = "???"
 
-  val validResult = validate(PersonForm(okName, List(Contact(okEmail, okPhone)), "47")).fold(
-    f => f.toList.groupBy(v => v.path),
-    identity
-  )
+  validate(PersonForm(okName, List(Contact(okEmail, okPhone)), "47")) match {
+    case Invalid(f) => println(f.toList.groupBy(v => v.path))
+    case Valid(s) => println(s)
+  }
 
-  println(validResult)
-
-
-  val invalidResult = validate(PersonForm(badName, List(Contact(okEmail, badPhone), Contact(badEmail, okPhone)), "200")).fold(
+  val invalidResult = validate(PersonForm(emptyName, List(Contact(okEmail, badPhone), Contact(badEmail, okPhone)), "200")).fold(
     f => f.toList.groupBy(v => v.path),
     identity
   )

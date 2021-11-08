@@ -47,6 +47,6 @@ object ValidateWithValidated extends App {
   println(validate(Data("", okEmail, 47)))
   println(validate(Data(badName, badEmail, -1)))
 
-  // Problem: we can have Invalid with en emptyList:
+  // Problem: we can have Invalid with an empty list!
 
 }
