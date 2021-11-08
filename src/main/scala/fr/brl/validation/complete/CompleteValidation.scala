@@ -2,23 +2,39 @@ package fr.brl.validation.complete
 
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
-import cats.implicits.{catsStdShowForMap, catsStdShowForString, _}
+import cats.implicits._
 
 import scala.util.Try
 
-sealed abstract class ValidationErrorType(key: String, args: Any*)
+trait ValidationErrorType {
+  def key: String
+  def args: List[Any] = List.empty
+}
 
-case object NameMustBeginWithUppercase extends ValidationErrorType("name.must.begin.with.uppercase")
+case object NameMustBeginWithUppercase extends ValidationErrorType() {
+  def key = "name.must.begin.with.uppercase"
+}
 
-case object NameMustNotBeEmpty extends ValidationErrorType("name.must.not.be.empty")
+case object NameMustNotBeEmpty extends ValidationErrorType{
+  def key = "name.must.not.be.empty"
+}
 
-case object AgeMustBeNumeric extends ValidationErrorType("age.must.be.numeric")
+case object AgeMustBeNumeric extends ValidationErrorType {
+  def key = "age.must.be.numeric"
+}
 
-case class InvalidAge(args: Any*) extends ValidationErrorType("invalid.age.range", args: _*)
+case class InvalidAge(params: Any*) extends ValidationErrorType {
+  def key = "invalid.age.range"
+  override def args: List[Any] = params.toList
+}
 
-case object InvalidEmail extends ValidationErrorType("invalid.email")
+case object InvalidEmail extends ValidationErrorType {
+  def key = "invalid.email"
+}
 
-case object InvalidPhone extends ValidationErrorType("invalid.phone")
+case object InvalidPhone extends ValidationErrorType {
+  def key = "invalid.phone"
+}
 
 final case class ValidationError(path: String, error: ValidationErrorType)
 
@@ -40,7 +56,7 @@ object CompleteValidation extends App {
       if (name.nonEmpty) name.validNel else ValidationError("person.name", NameMustNotBeEmpty).invalidNel
 
     validateNonEmptyName(name) *> validateUppercaseName(name)
-    // validateNonEmptyName(name) productR validateUppercaseName(name)
+    // validateNonEmptyName(name) productR validateUppercaseName(name) // equivalent
     // validateNonEmptyName(name) combine validateUppercaseName(name) //accumulates all errors AND ALL SUCCESS !
 
   }
@@ -48,8 +64,7 @@ object CompleteValidation extends App {
   def validateAge(age: String): AllErrorsOr[Int] = {
     val numericAgeValidation = Try(age.toInt)
       .toEither
-      .left
-      .map(_ => ValidationError("person.age", AgeMustBeNumeric))
+      .leftMap(_ => ValidationError("person.age", AgeMustBeNumeric))
       .toValidatedNel
 
     def rangeAgeValidation(numericAge: Int) = {
@@ -78,11 +93,13 @@ object CompleteValidation extends App {
       }
     }
 
-    /*    contacts.view
+    /*
+    contacts.view
           .zipWithIndex
           .map {
             case (c, i) => (validateEmail(c.email, i), validatePhone(c.phone, i)).mapN(Contact)
-          }.toList.sequence*/
+          }.toList.sequence
+    */
 
 
     contacts.view
@@ -97,21 +114,20 @@ object CompleteValidation extends App {
   val okName = "Richard"
   val badName = "rc"
   val emptyName = ""
-  val okEmail = "richard.capraro@brl.fr"
-  val badEmail = "richard.capraro#brl,fr"
+  val okEmail = "richard.capraro@domain.fr"
+  val badEmail = "richard.capraro#domain,fr"
   val okPhone = "+33 06 77 77 77 77"
   val badPhone = "???"
 
   validate(PersonForm(okName, List(Contact(okEmail, okPhone)), "47")) match {
-    case Invalid(f) => println(f.toList.groupBy(v => v.path))
+    case Invalid(f) => println(f.toList.groupBy(_.path))
     case Valid(s) => println(s)
   }
 
-  val invalidResult = validate(PersonForm(emptyName, List(Contact(okEmail, badPhone), Contact(badEmail, okPhone)), "200")).fold(
-    f => f.toList.groupBy(v => v.path),
+  val invalidResult = validate(PersonForm(emptyName, List(Contact(okEmail, badPhone), Contact(badEmail, okPhone)), "???")).fold(
+    f => f.toList.groupBy(_.path),
     identity
   )
 
   println(invalidResult)
-
 }

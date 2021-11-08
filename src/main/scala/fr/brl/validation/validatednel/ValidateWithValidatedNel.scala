@@ -41,8 +41,8 @@ object ValidateWithValidatedNel extends App {
 
   val okName = "Richard"
   val badName = "he"
-  val okEmail = "richard.capraro@brl.fr"
-  val badEmail = "richard.capraro#brl,fr"
+  val okEmail = "richard.capraro@domain.fr"
+  val badEmail = "richard.capraro#domain,fr"
   println(validate(Data(okName, okEmail, 47)))
   println(validate(Data("", okEmail, 47)))
   println(validate(Data(badName, badEmail, -1)))
