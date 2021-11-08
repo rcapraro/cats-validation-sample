@@ -9,9 +9,7 @@ sealed abstract class ValidationErrorType(key: String, args: Any*)
 
 case object NameMustBeginWithUppercase extends ValidationErrorType("name.must.begin.with.uppercase")
 
-case object NameTooShort extends ValidationErrorType("name.too.short")
-
-case object NameTooLong extends ValidationErrorType("name.too.long")
+case object NameMustNotBeEmpty extends ValidationErrorType("name.must.not.be.empty")
 
 case object AgeMustBeNumeric extends ValidationErrorType("age.must.be.numeric")
 
@@ -35,8 +33,16 @@ object CompleteValidation extends App {
 
 
   def validateName(name: String): AllErrorsOr[String] = {
-    if (name.headOption.exists(_.isUpper)) name.validNel
-    else ValidationError("person.name", NameMustBeginWithUppercase).invalidNel
+    def validateUppercaseName(name: String): AllErrorsOr[String] =
+      if (name.headOption.exists(_.isUpper)) name.validNel else ValidationError("person.name", NameMustBeginWithUppercase).invalidNel
+
+    def validateNonEmptyName(name: String): AllErrorsOr[String] =
+      if (name.nonEmpty) name.validNel else ValidationError("person.name", NameMustNotBeEmpty).invalidNel
+
+    // validateNonEmptyName(name) combine validateUppercaseName(name) //accumulates all errors AND ALL SUCCESS !
+    validateNonEmptyName(name) *> validateUppercaseName(name)
+    // validateNonEmptyName(name) productR validateUppercaseName(name)
+
   }
 
   def validateAge(age: String): AllErrorsOr[Int] = {
@@ -51,7 +57,7 @@ object CompleteValidation extends App {
       else numericAge.validNel
     }
 
-    numericAgeValidation.andThen(rangeAgeValidation) // don't validate range if numeric validation fails
+    numericAgeValidation.andThen(rangeAgeValidation) // fails fast if numeric validation fails
   }
 
   def validateContacts(contacts: List[Contact]): AllErrorsOr[List[Contact]] = {
@@ -90,12 +96,25 @@ object CompleteValidation extends App {
 
   val okName = "Richard"
   val badName = "rc"
+  val emptyName = ""
   val okEmail = "richard.capraro@brl.fr"
   val badEmail = "richard.capraro#brl,fr"
   val okPhone = "+33 06 77 77 77 77"
   val badPhone = "???"
-  println(validate(PersonForm(okName, List(Contact(okEmail, okPhone)), "47")))
-  println(validate(PersonForm(okName, List(Contact(okEmail, okPhone)), "??")))
-  println(validate(PersonForm(badName, List(Contact(okEmail, badPhone), Contact(badEmail, okPhone)), "200")))
+
+  val validResult = validate(PersonForm(okName, List(Contact(okEmail, okPhone)), "47")).fold(
+    f => f.toList.groupBy(v => v.path),
+    identity
+  )
+
+  println(validResult)
+
+
+  val invalidResult = validate(PersonForm(badName, List(Contact(okEmail, badPhone), Contact(badEmail, okPhone)), "200")).fold(
+    f => f.toList.groupBy(v => v.path),
+    identity
+  )
+
+  println(invalidResult)
 
 }

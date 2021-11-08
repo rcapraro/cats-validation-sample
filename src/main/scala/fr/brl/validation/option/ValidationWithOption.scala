@@ -6,7 +6,7 @@ object ValidationWithOption extends App {
 
   case class Data(name: String, email: String, age: Int)
 
-  def validateName(n: String): Option[String] = Option.when(!n.isBlank && n.exists(_.isUpper))(n)
+  def validateName(n: String): Option[String] = Option.when(n.nonEmpty && n.exists(_.isUpper))(n)
 
   def validateEmail(e: String): Option[String] = Option.when(Validators.isValidEmail(e))(e)
 

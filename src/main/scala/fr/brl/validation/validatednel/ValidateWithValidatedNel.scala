@@ -13,7 +13,7 @@ object ValidateWithValidatedNel extends App {
 
   def validateName(n: String): ValidatedNel[String, String] = {
     val errors = new ListBuffer[String]()
-    if (n.isBlank) errors += "Name should not be blank"
+    if (n.isEmpty) errors += "Name should not be blank"
     if (!n.exists(_.isUpper)) errors += "Name should begin with uppercase"
     if (n.length <= 3) errors += "Name is too short"
     if (n.length > 100) errors += "Name is too long"
